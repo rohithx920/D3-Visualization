@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+rect {
+  stroke: #fff;
+}
+
+.first{
+  width: 960;
+  height: 600;
+}
+.second{
+  width: 100;
+  height: 600;
+  border: 5px;
+}
+tspan{
+   border-style: solid;
+   border-width: 5px;
+}
+
+</style>
+<body>
+  <span class="first">
+
+  </span>
+  <span class="second">
+  </span>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var width = 960,
+    height = 600;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([0, height]);
+
+var color = d3.scale.category20c();
+var col = ["green","blue","yellow","red","violet"];
+
+
+var partition = d3.layout.partition()
+    .children(function(d) { return isNaN(d.value) ? d3.entries(d.value) : null; })
+    .value(function(d) { return d.value; });
+
+    var svg = d3.select("span.first").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+    var svg1 = d3.select("span.second").append("svg")
+        .attr("width", 200)
+        .attr("height", height);
+
+var project = svg.selectAll(".bar");
+
+d3.json("output.json", function(error, root) {
+  if (error) throw error;
+var total_children_count=0;
+console.log(root)
+
+function loop(root){
+  for (var property in root) {
+    if (root.hasOwnProperty(property)) {
+        var loc=root[property];
+        if(loc){
+          loop(loc);
+        }
+  //  for (var i = loc.length - 1; i >= 0; i--) {
+  //       console.log(loc[i]);
+  //       loop(loc[i]);
+  // }
+  }
+}
+}
+    loop(root);
+  bit = project
+      .data(partition(d3.entries(root)[0]))
+    .enter()
+    clue=bit.append("rect")
+      .attr("class","bar")
+      .attr("x", function(d) { return x(d.x); })
+      .attr("y", function(d) { return y(d.y); })
+      .attr("width", function(d) { return x(d.dx); })
+      .attr("height", function(d) { return y(d.dy); })
+      .attr("fill", function(d) {
+          //console.log(d);
+          // for(int i =0;i<5;i++)
+          // {
+
+          if(d["parent"]==undefined){
+             return "CadetBlue";
+          }
+          else{
+              if(d["depth"]==1){
+                var sum =0;
+                for(var i=0;i<d.children.length;i++){
+                    for(var j=0;j<d.children[i].children.length;j++){
+                            sum = sum+ d.children[i].children[j].children.length;
+                  }
+              }
+              var avg = d.value/sum;
+                if(avg<7){
+                      return "orange";
+                  }else if(avg>7&avg<9){
+                      return "green";
+                  }else if(avg>9){
+                      return "red";
+                  }
+              }
+              else if(d["depth"]==2){
+                  var sum =0;
+                  for(var i=0;i<d.children.length;i++){
+                     sum = sum+ d.children[i].children.length;
+                  }
+                  var avg = d.value/sum;
+                  if(avg<7){
+                      return "orange";
+                  }else if(avg>7&avg<9){
+                      return "green";
+                  }else if(avg>9){
+                      return "red";
+                  }
+              }
+              else if(d["depth"]==3){
+                  var avg = d.value/d.children.length;
+                  if(avg<7){
+                      return "orange";
+                  }else if(avg>7&avg<9){
+                      return "green";
+                  }else if(avg>9){
+                      return "red";
+                  }
+              }
+              else if(d["depth"]==4){
+                  if(d.value==2.23){
+                      return "red";
+                  }else if(d.value<6){
+                      return "blue";
+                  }else if(d.value>6&d.value<8.5){
+                      return "green";
+                  }else{
+                      return "pink";
+                  }
+              }
+              else if(d["depth"]==5){
+                return "none";
+              }
+
+            // if(d["children"]==undefined){
+            //   total_children_count=total_children_count+1;
+            //   console.log("no:"+total_children_count);
+            //   return "yellow";
+            // }
+            // else{
+            //   //  console.log(d[])
+            //   return "green"
+            //
+            // }
+
+      }
+    })
+      //.attr("fill","")
+      .on("click", clicked);
+
+      clue.append("title")
+      .text(function(d){
+        return d.key+":"+d.value;
+      });
+
+      bit.append("text")
+         .attr("x", "300px")
+         .attr("y", "60px")
+         .attr("dy", ".35em")
+         .attr("font-size",function(d){
+             if(d["parent"]==undefined){
+             return 55;
+          }else{
+              return 0;
+          }
+      })
+         .text(function(d) {
+             if(d["parent"]==undefined){
+             return "Dialmer Truck";
+          } });
+
+
+});
+
+
+function clicked(d) {
+  x.domain([d.x, d.x + d.dx]);
+  y.domain([d.y, 1]).range([d.y ? 20 : 0, height]);
+
+  clue.transition()
+      .duration(750)
+      .attr("x", function(d) { return x(d.x); })
+      .attr("y", function(d) { return y(d.y); })
+      .attr("width", function(d) { return x(d.x + d.dx) - x(d.x); })
+      .attr("height", function(d) { return y(d.y + d.dy) - y(d.y); });
+}
+
+
+var text_values=["Orange: Not Punctual","Green: Punctual","Red: Overtime"];
+svg1.append("text").selectAll("tspan")
+                  .data(text_values)
+                  .enter().append("tspan")
+                   .attr("x",0)
+                   .attr("y",function(d,i){
+                     return 90+30*i;
+                   })
+
+                   .attr("fill",function(d,i){
+                     if(i==0){
+                       return "orange";
+                     }
+                     else if(i==1){
+                       return "green";
+                     }
+                     else if(i==2){
+                       return "red";
+                     }
+                   })
+                   .attr("text-anchor","start") //for horizontal spacing adjustment
+                   .attr("dominant-baseline","middle") //for verical spacing adjustment
+                   .attr("font-size","20")
+                   .text(function(d){
+                     return d;
+                   });
+
+
+
+</script>
+</body>
+</html>
